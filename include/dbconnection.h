@@ -7,8 +7,8 @@
 class DBConnection
 {
 private:
-    mysqlx::Session session;
-    mysqlx::Schema db;
+    mysqlx::Session session; // Represents the connection session with the MySQL server.
+    mysqlx::Schema db;       // Represents a specific database/schema selected within the session.
 
 public:
     DBConnection(const std::string &host,
@@ -20,7 +20,8 @@ public:
     ~DBConnection();
 
     void insertMessage(int sender_id, int receiver_id, const std::string &msg);
-    mysqlx::RowResult getAllMessages();
+    mysqlx::RowResult getMessages(int receiver_id);
+    void deleteMessagesByReceiver(int receiver_id);
 };
 
 #endif

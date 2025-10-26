@@ -17,6 +17,7 @@ public:
            const std::string &db_name);
 
     void start();
+    
 };
 
 #endif

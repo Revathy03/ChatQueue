@@ -14,6 +14,11 @@ DBConnection::DBConnection(const std::string &host,
     cout << "Connected to DB successfully." << endl;
 }
 
+/*
+mysqlx::Session(host, port, user, password) - Opens a session using MySQL X DevAPI.
+session.getSchema(db_name) - Gets a handle to the database/schema you want to work with.
+*/
+
 DBConnection::~DBConnection()
 {
     session.close();
@@ -35,9 +40,28 @@ void DBConnection::insertMessage(int sender_id, int receiver_id, const std::stri
     }
 }
 
-mysqlx::RowResult DBConnection::getAllMessages()
+mysqlx::RowResult DBConnection::getMessages(int receiver_id)
 {
     mysqlx::Table messages = db.getTable("messages");
     return messages.select("id", "sender_id", "receiver_id", "msg", "CAST(created_at AS CHAR) AS created_at")
+        .where("receiver_id = :rid")
+        .bind("rid", receiver_id)
         .execute();
+}
+void DBConnection::deleteMessagesByReceiver(int receiver_id)
+{
+    try
+    {
+        mysqlx::Table messages = db.getTable("messages");
+        messages.remove()
+            .where("receiver_id = :rid")
+            .bind("rid", receiver_id)
+            .execute();
+
+        cout << "Messages deleted for receiver_id: " << receiver_id << endl;
+    }
+    catch (const mysqlx::Error &err)
+    {
+        cerr << "Delete Error: " << err.what() << endl;
+    }
 }
