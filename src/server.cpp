@@ -77,6 +77,25 @@ void Server::start()
         res.status = 200;
         res.set_content(messages.dump(), "application/json"); });
 
+    svr.Get(R"(/history/(\d+))", [&](const httplib::Request &req, httplib::Response &res)
+            {
+        int client_id = stoi(req.matches[1]);
+        auto result = db.getHistory(client_id);
+        json messages = json::array();
+
+        for(auto row : result) {
+                messages.push_back({
+                    {"id", int(row[0])},
+                    {"sender_id", int(row[1])},
+                    {"receiver_id", int(row[2])},
+                    {"msg", (string)row[3]},
+                    {"created_at", row[4].get<string>()}
+                });
+        }
+
+        res.status = 200;
+        res.set_content(messages.dump(), "application/json"); });
+
     // Delete all messages for client
     svr.Delete(R"(/message/(\d+))", [&](const httplib::Request &req, httplib::Response &res) 
                {

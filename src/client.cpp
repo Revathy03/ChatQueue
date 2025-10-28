@@ -32,9 +32,35 @@ void Client::getMessages(int client_id)
     httplib::Client cli(serverUrl.c_str());                             //.c_str() returns a const char* pointing to the internal null-terminated string of the std::string.
     auto res = cli.Get(("/message/" + to_string(client_id)).c_str());
 
-    if (res)
-        cout << "Messages:\n"
-             << res->body << endl;
+    if (res){
+        json messages = json::parse(res->body);
+        for (auto &m : messages)
+        {
+            cout << "Sender: " << m["sender_id"] << "\n"
+                 << "Message: " << m["msg"] << "\n"
+                 << "Time: " << m["created_at"] << "\n"
+                 << "---------------------------\n";
+        }
+    }
+    else
+        cout << "Failed to send request" << endl;
+}
+
+void Client::getHistory(int client_id)
+{
+    httplib::Client cli(serverUrl.c_str()); 
+    auto res = cli.Get(("/history/" + to_string(client_id)).c_str());
+
+    if (res){
+        json messages = json::parse(res->body);
+        for (auto &m : messages)
+        {
+            cout << "Sender: " << m["sender_id"] << "\n"
+                 << "Message: " << m["msg"] << "\n"
+                 << "Time: " << m["created_at"] << "\n"
+                 << "---------------------------\n";
+        }
+    }
     else
         cout << "Failed to send request" << endl;
 }

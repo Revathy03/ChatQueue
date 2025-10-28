@@ -43,11 +43,43 @@ void DBConnection::insertMessage(int sender_id, int receiver_id, const std::stri
 mysqlx::RowResult DBConnection::getMessages(int receiver_id)
 {
     mysqlx::Table messages = db.getTable("messages");
-    return messages.select("id", "sender_id", "receiver_id", "msg", "CAST(created_at AS CHAR) AS created_at")
-        .where("receiver_id = :rid")
+
+    // First: fetch unread messages
+    mysqlx::RowResult result = messages.select("id", "sender_id", "receiver_id", "msg", "CAST(created_at AS CHAR) AS created_at")
+                                .where("receiver_id = :rid AND is_read = FALSE")
+                                .bind("rid", receiver_id)
+                                .execute();
+
+    // Second: mark them as read
+    messages.update()
+        .set("is_read", true)
+        .where("receiver_id = :rid AND is_read = FALSE")
         .bind("rid", receiver_id)
         .execute();
+
+    return result;
 }
+
+mysqlx::RowResult DBConnection::getHistory(int receiver_id)
+{
+    mysqlx::Table messages = db.getTable("messages");
+
+    // First: fetch unread messages
+    mysqlx::RowResult result = messages.select("id", "sender_id", "receiver_id", "msg", "CAST(created_at AS CHAR) AS created_at")
+                                   .where("receiver_id = :rid")
+                                   .bind("rid", receiver_id)
+                                   .execute();
+
+    // Second: mark them as read
+    messages.update()
+        .set("is_read", true)
+        .where("receiver_id = :rid AND is_read = FALSE")
+        .bind("rid", receiver_id)
+        .execute();
+
+    return result;
+}
+
 void DBConnection::deleteMessagesByReceiver(int receiver_id)
 {
     try

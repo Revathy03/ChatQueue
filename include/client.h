@@ -12,6 +12,7 @@ public:
     Client(const std::string &url);
     void sendMessage(int sender, int receiver, const std::string &msg);
     void getMessages(int client_id);
+    void getHistory(int client_id);
     void deleteMessages(int client_id);
 };
 

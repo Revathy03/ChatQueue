@@ -11,8 +11,9 @@ int main()
         cout << "\n========== ChatQueue Client ==========\n";
         cout << "1. Send Message\n";
         cout << "2. View My Messages\n";
-        cout << "3. Delete My Messages\n";
-        cout << "4. Exit\n";
+        cout << "3. View My History\n";
+        cout << "4. Delete My Messages\n";
+        cout << "5. Exit\n";
         cout << "Choose: ";
 
         int choice;
@@ -47,9 +48,16 @@ int main()
             int id;
             cout << "Enter your Client ID: ";
             cin >> id;
-            client.deleteMessages(id);
+            client.getHistory(id);
         }
         else if (choice == 4)
+        {
+            int id;
+            cout << "Enter your Client ID: ";
+            cin >> id;
+            client.deleteMessages(id);
+        }
+        else if (choice == 5)
         {
             cout << "Exiting client...\n";
             break;
