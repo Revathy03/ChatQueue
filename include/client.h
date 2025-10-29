@@ -2,18 +2,22 @@
 #define CLIENT_H
 // Header guards, They prevent double inclusion of this header file.
 #include <string>
+#include <fstream>
 
     class Client
 {
 private:
     std::string serverUrl;
+    int client_id;
 
 public:
     Client(const std::string &url);
-    void sendMessage(int sender, int receiver, const std::string &msg);
-    void getMessages(int client_id);
-    void getHistory(int client_id);
-    void deleteMessages(int client_id);
+    ~Client();
+    int getRandomidFromFile();
+    void sendMessage(const std::string &msg);
+    void getMessages();
+    void getHistory();
+    void deleteMessages();
 };
 
 #endif

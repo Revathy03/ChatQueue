@@ -4,6 +4,7 @@
 using namespace std;
 int main()
 {
+    cout << "test";
     Client client("http://localhost:8080");
 
     while (true)
@@ -21,12 +22,10 @@ int main()
 
         if (choice == 1)
         {
-            int sender, receiver;
+            int receiver;
             string msg="";
-            cout << "Enter Sender ID: ";
-            cin >> sender;
-            cout << "Enter Receiver ID: ";
-            cin >> receiver;
+            //cout << "Enter Receiver ID: ";
+            //cin >> receiver;
             cin.ignore();
             cout << "Enter Message: ";
             while(msg==""){
@@ -34,28 +33,21 @@ int main()
                 if(msg=="")
                     cout << "Please enter your message: ";
             }
-            client.sendMessage(sender, receiver, msg);
+            client.sendMessage(msg);
         }
         else if (choice == 2)
         {
-            int id;
-            cout << "Enter your Client ID: ";
-            cin >> id;
-            client.getMessages(id);
+            client.getMessages();
         }
         else if (choice == 3)
         {
-            int id;
-            cout << "Enter your Client ID: ";
-            cin >> id;
-            client.getHistory(id);
+
+            client.getHistory();
         }
         else if (choice == 4)
         {
-            int id;
-            cout << "Enter your Client ID: ";
-            cin >> id;
-            client.deleteMessages(id);
+
+            client.deleteMessages();
         }
         else if (choice == 5)
         {

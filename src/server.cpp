@@ -31,6 +31,13 @@ void Server::start()
     req.headers         // HTTP headers
 
     */
+    svr.Post("/register", [&](const httplib::Request &req, httplib::Response &res)
+             {
+                 int client_id = db.registerClient();
+                 string json = "{\"client_id\": " + to_string(client_id) + "}";
+                 res.status = 200;
+                 res.set_content(json, "application/json");
+             });
 
     svr.Post("/message", [&](const httplib::Request &req, httplib::Response &res)
             {
@@ -45,7 +52,7 @@ void Server::start()
             */
 
             db.insertMessage(body["sender_id"], body["receiver_id"], body["msg"]);
-            res.status = 201;
+            res.status = 200;
             res.set_content(R"({"status":"Message stored"})", "application/json"); // Without R, you have to escape every ".
         } catch (...) {
             res.status = 400;
@@ -105,6 +112,15 @@ void Server::start()
 
         res.status = 200;
         res.set_content(R"({"status":"Messages deleted"})", "application/json"); });
+
+    svr.Delete(R"(/deactivate/(\d+))", [&](const httplib::Request &req, httplib::Response &res)
+               {
+        int client_id = stoi(req.matches[1]);
+
+        db.deactivateClient(client_id);
+
+        res.status = 200;
+        res.set_content(R"({"status":"Client deactivated "})", "application/json"); });
 
     svr.listen("0.0.0.0", 8080);
 }

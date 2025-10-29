@@ -2,7 +2,6 @@
 #include <iostream>
 
 using namespace std;
-
 DBConnection::DBConnection(const std::string &host,
                            int port,
                            const std::string &user,
@@ -12,6 +11,34 @@ DBConnection::DBConnection(const std::string &host,
       db(session.getSchema(db_name))
 {
     cout << "Connected to DB successfully." << endl;
+
+    try
+    {
+        session.sql("CREATE DATABASE IF NOT EXISTS " + db_name).execute();
+        session.sql("USE " + db_name).execute();
+
+        session.sql("CREATE TABLE IF NOT EXISTS messages ("
+                    "id INT AUTO_INCREMENT PRIMARY KEY,"
+                    "sender_id INT NOT NULL,"
+                    "receiver_id INT NOT NULL,"
+                    "msg TEXT NOT NULL,"
+                    "is_read BOOLEAN DEFAULT FALSE,"
+                    "created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP"
+                    ")")
+            .execute();
+
+        session.sql("CREATE TABLE IF NOT EXISTS clients ("
+                    "id INT AUTO_INCREMENT PRIMARY KEY,"
+                    "is_active BOOLEAN DEFAULT FALSE"
+                    ")")
+            .execute();
+
+        cout << "Table check/creation completed" << endl;
+    }
+    catch (const mysqlx::Error &err)
+    {
+        cerr << "Table Creation Error: " << err.what() << endl;
+    }
 }
 
 /*
@@ -24,7 +51,63 @@ DBConnection::~DBConnection()
     session.close();
 }
 
-void DBConnection::insertMessage(int sender_id, int receiver_id, const std::string &msg)
+int DBConnection::registerClient()
+{
+    // Step 1: Try to reuse an inactive client ID
+    auto result = session.sql(
+                             "SELECT id FROM clients WHERE is_active = FALSE ORDER BY id LIMIT 1")
+                      .execute();
+
+    auto row = result.fetchOne();
+    if (row)
+    {
+        int reused_id = row[0].get<int>();
+
+        // Mark it active again
+        session.sql("UPDATE clients SET is_active = TRUE WHERE id = ?")
+            .bind(reused_id)
+            .execute();
+
+        cout << "Reactivated Client ID: " << reused_id << endl;
+        return reused_id;
+    }
+
+    // Step 2: No inactive found → Create a new row
+    session.sql("INSERT INTO clients (is_active) VALUES (TRUE)").execute();
+
+    auto insert_result = session.sql("SELECT LAST_INSERT_ID()").execute();
+    auto insert_row = insert_result.fetchOne();
+    int new_id = insert_row[0].get<int>();
+
+    cout << "New Client Registered: " << new_id << endl;
+    return new_id;
+}
+
+void DBConnection::deactivateClient(int client_id)
+{
+    try
+    {
+        auto stmt = session.sql(
+                               "UPDATE clients SET is_active = FALSE WHERE id = ?")
+                        .bind(client_id)
+                        .execute();
+
+        if (stmt.getAffectedItemsCount() > 0)
+        {
+            cout << "Client marked inactive: " << client_id << endl;
+        }
+        else
+        {
+            cout << "Client ID not found: " << client_id << endl;
+        }
+    }
+    catch (const exception &e)
+    {
+        cerr << "Error during deactivation: " << e.what() << endl;
+    }
+}
+
+    void DBConnection::insertMessage(int sender_id, int receiver_id, const std::string &msg)
 {
     try
     {

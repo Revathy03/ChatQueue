@@ -19,6 +19,8 @@ public:
 
     ~DBConnection();
 
+    int registerClient();
+    void deactivateClient(int client_id);
     void insertMessage(int sender_id, int receiver_id, const std::string &msg);
     mysqlx::RowResult getMessages(int receiver_id);
     mysqlx::RowResult getHistory(int receiver_id);
