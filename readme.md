@@ -27,7 +27,7 @@ When a client requests their messages, the system first checks the cache for unr
 
 ---
 
-## Database design
+## Database Design
 The database uses two tables to provide persistent storage for clients and messages.
 
 Clients Table
@@ -51,7 +51,7 @@ Messages Table
 - created_at (TIMESTAMP, default CURRENT_TIMESTAMP) – Timestamp of message creation.
 
 ---
-## Cache design
+## Cache Design
 The system also uses an in-memory cache which stores recently accessed messages and manages clients for fast retrieval:
 
 1. Client Nodes
