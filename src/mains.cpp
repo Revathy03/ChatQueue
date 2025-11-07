@@ -1,15 +1,18 @@
 #include "server.h"
+#include "dotenv.h"
 #include <iostream>
-#include <cstdlib> // for getenv
+
 using namespace std;
 
 int main()
 {
-    string host = getenv("DB_HOST") ? getenv("DB_HOST") : "localhost"; //have to setup environment variables
-    int port = atoi(getenv("DB_PORT") ? getenv("DB_PORT") : "33060");    
-    string user = getenv("DB_USER") ? getenv("DB_USER") : "root"; 
-    string password = getenv("DB_PASSWORD") ? getenv("DB_PASSWORD") : "";
-    string db_name = getenv("DB_NAME") ? getenv("DB_NAME") : "decs_project"; 
+
+    dotenv::init("../.env"); //binary file is in the build folder , and .env is stored in the root folder
+    string host = getenv("DB_HOST"); 
+    int port = atoi(getenv("DB_PORT")) ;
+    string user = getenv("DB_USER") ;
+    string password = getenv("DB_PASSWORD") ;
+    string db_name = getenv("DB_NAME") ;
 
     try
     {

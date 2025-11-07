@@ -41,7 +41,7 @@ Client::Client(const string &url) : serverUrl(url)
         // Append only if not present already
         if (existing_ids.find(client_id) == existing_ids.end())
         {
-            ofstream outfile("../data/client_id.txt", ios::app);
+            ofstream outfile("../data/client_id.txt", ios::app); //Open file in append mode
             outfile << client_id << endl;
             cout << "Client ID saved to file" << endl;
         }
@@ -71,36 +71,41 @@ Client::~Client(){
 
 int Client::getRandomidFromFile()
 {
-    std::ifstream file("../data/client_id.txt");
+    ifstream file("../data/client_id.txt");
     if (!file.is_open())
     {
-        std::cerr << "File not found!\n";
+        cout << "File not found!\n";
         return -1;
     }
 
-    int lines = 0;
-    std::string temp;
-
-    while (std::getline(file, temp))
+    vector<int> ids;
+    string line;
+    while (getline(file, line))
     {
-        lines++;
-    }
-
-    if (lines == 0)
-        return -1;
-
-    std::srand(std::time(nullptr));
-    int randomLine = std::rand() % lines; // pick a line
-
-    file.clear();
-    file.seekg(0);
-
-    for (int i = 0; i < randomLine; i++)
-    {
-        std::getline(file, temp);
+        try
+        {
+            if (!line.empty())
+                ids.push_back(stoi(line));
+        }
+        catch (...)
+        {
+            cout << "Invalid ID in file: " << line << endl;
+        }
     }
     file.close();
-    return std::stoi(temp);
+
+    if (ids.size() <= 1) // only me or none
+        return -1;
+
+    srand(time(nullptr));
+
+    int id;
+    do
+    {
+        id = ids[rand() % ids.size()];
+    } while (id == client_id);
+
+    return id;
 }
 
 void Client::sendMessage(const string &msg)
@@ -110,6 +115,12 @@ void Client::sendMessage(const string &msg)
     int receiver = client_id;
     while(receiver==client_id){
         receiver = getRandomidFromFile();
+        if (receiver == -1)
+        {
+            cout << "No valid receiver found. Try running another client.\n";
+            return;
+        }
+
         cout << "Receiver id : " << receiver << endl;
     }
 
@@ -138,8 +149,8 @@ void Client::getMessages()
         {
             cout << "Sender: " << m["sender_id"] << "\n"
                  << "Message: " << m["msg"] << "\n"
-                 << "Time: " << m["created_at"] << "\n"
-                 << "---------------------------\n";
+                 << "Timestamp: " << m["created_at"] << "\n"
+            << "---------------------------\n";
         }
     }
     else

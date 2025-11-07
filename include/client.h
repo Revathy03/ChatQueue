@@ -4,10 +4,12 @@
 #include <string>
 #include <fstream>
 
-    class Client
+using namespace std;
+
+class Client
 {
 private:
-    std::string serverUrl;
+    string serverUrl;
     int client_id;
 
 public:

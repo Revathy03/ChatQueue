@@ -53,6 +53,7 @@ DBConnection::~DBConnection()
 
 int DBConnection::registerClient()
 {
+    lock_guard<mutex> lock(mtx);
     // Step 1: Try to reuse an inactive client ID
     auto result = session.sql(
                              "SELECT id FROM clients WHERE is_active = FALSE ORDER BY id LIMIT 1")
@@ -85,6 +86,7 @@ int DBConnection::registerClient()
 
 void DBConnection::deactivateClient(int client_id)
 {
+    lock_guard<mutex> lock(mtx);
     try
     {
         auto stmt = session.sql(
@@ -107,15 +109,17 @@ void DBConnection::deactivateClient(int client_id)
     }
 }
 
-    void DBConnection::insertMessage(int sender_id, int receiver_id, const std::string &msg)
+void DBConnection::insertMessage(int sender_id, int receiver_id,
+                                 const std::string &msg, const std::string &created_at)
 {
+    lock_guard<mutex> lock(mtx);
     try
     {
         mysqlx::Table messages = db.getTable("messages");
-        messages.insert("sender_id", "receiver_id", "msg")
-            .values(sender_id, receiver_id, msg)
+        messages.insert("sender_id", "receiver_id", "msg", "created_at")
+            .values(sender_id, receiver_id, msg, created_at)
             .execute();
-        cout << "Message inserted successfully.\n";
+        cout << "Message inserted @ " << created_at << endl;
     }
     catch (const mysqlx::Error &err)
     {
@@ -125,6 +129,7 @@ void DBConnection::deactivateClient(int client_id)
 
 mysqlx::RowResult DBConnection::getMessages(int receiver_id)
 {
+    lock_guard<mutex> lock(mtx);
     mysqlx::Table messages = db.getTable("messages");
 
     // First: fetch unread messages
@@ -133,18 +138,30 @@ mysqlx::RowResult DBConnection::getMessages(int receiver_id)
                                 .bind("rid", receiver_id)
                                 .execute();
 
-    // Second: mark them as read
-    messages.update()
-        .set("is_read", true)
-        .where("receiver_id = :rid AND is_read = FALSE")
-        .bind("rid", receiver_id)
-        .execute();
-
     return result;
+}
+
+void DBConnection::markMessagesAsRead(int receiver_id)
+{
+    lock_guard<mutex> lock(mtx);
+    try
+    {
+        mysqlx::Table messages = db.getTable("messages");
+        messages.update()
+            .set("is_read", true)
+            .where("receiver_id = :rid AND is_read = FALSE")
+            .bind("rid", receiver_id)
+            .execute();
+    }
+    catch (const mysqlx::Error &err)
+    {
+        cerr << "Mark as read failed: " << err.what() << endl;
+    }
 }
 
 mysqlx::RowResult DBConnection::getHistory(int receiver_id)
 {
+    lock_guard<mutex> lock(mtx);
     mysqlx::Table messages = db.getTable("messages");
 
     // First: fetch unread messages
@@ -165,6 +182,7 @@ mysqlx::RowResult DBConnection::getHistory(int receiver_id)
 
 void DBConnection::deleteMessagesByReceiver(int receiver_id)
 {
+    lock_guard<mutex> lock(mtx);
     try
     {
         mysqlx::Table messages = db.getTable("messages");
@@ -178,5 +196,29 @@ void DBConnection::deleteMessagesByReceiver(int receiver_id)
     catch (const mysqlx::Error &err)
     {
         cerr << "Delete Error: " << err.what() << endl;
+    }
+}
+
+mysqlx::RowResult DBConnection::getUnreadMessagesBefore(int receiver_id, const std::string &timestamp)
+{
+    lock_guard<mutex> lock(mtx);
+    mysqlx::Table messages = db.getTable("messages");
+
+    try
+    {
+        mysqlx::RowResult result = messages
+                                       .select("id", "sender_id", "receiver_id", "msg", "CAST(created_at AS CHAR) AS created_at")
+                                       .where("receiver_id = :rid AND is_read = FALSE AND created_at < :ts")
+                                       .orderBy("created_at DESC")
+                                       .bind("rid", receiver_id)
+                                       .bind("ts", timestamp)
+                                       .execute();
+
+        return result;
+    }
+    catch (const mysqlx::Error &err)
+    {
+        cerr << "Error fetching unread messages before timestamp: " << err.what() << endl;
+        throw;
     }
 }

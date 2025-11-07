@@ -11,18 +11,18 @@ Server::Server(const string &host,
                const string &user,
                const string &password,
                const string &db_name)
-    : db(host, port, user, password, db_name) {} //As the server starts it connects to db, calling the constructor of DBconnection
-
+    : db(host, port, user, password, db_name),c(2,2) {} // As the server starts it connects to db, calling the constructor of DBconnection
+//add ,c(2,3) to change limit
 void Server::start()
 {
-    httplib::Server svr; //creating a server object
+    httplib::Server svr; // creating a server object
 
     cout << "REST Server running on http://localhost:8080" << endl;
 
     // Insert message
     //[&]	Captures variables by reference from outer scope (so you can use db inside)
-    //const httplib::Request &req	Contains everything sent by the client: body, headers, URL parameters
-    //httplib::Response &res	You fill this to send data back: status code, response JSON, etc.
+    // const httplib::Request &req	Contains everything sent by the client: body, headers, URL parameters
+    // httplib::Response &res	You fill this to send data back: status code, response JSON, etc.
 
     /*
     req.body            // The JSON or text sent by client
@@ -36,11 +36,11 @@ void Server::start()
                  int client_id = db.registerClient();
                  string json = "{\"client_id\": " + to_string(client_id) + "}";
                  res.status = 200;
-                 res.set_content(json, "application/json");
-             });
+                 res.set_content(json, "application/json"); 
+                 unreadCnt[client_id]=0; });
 
     svr.Post("/message", [&](const httplib::Request &req, httplib::Response &res)
-            {
+             {
         try {
             json body = json::parse(req.body);
 
@@ -51,9 +51,33 @@ void Server::start()
             body["msg"]
             */
 
-            db.insertMessage(body["sender_id"], body["receiver_id"], body["msg"]);
+            Message msg;
+            msg.senderId = body["sender_id"].get<int>();
+            msg.text = body["msg"];
+
+            // Assign timestamp here
+            auto now = chrono::system_clock::now();
+            time_t t = chrono::system_clock::to_time_t(now);
+            tm local_tm = *localtime(&t);
+            stringstream ss;
+            ss << put_time(&local_tm, "%Y-%m-%d %H:%M:%S");
+            msg.timestamp = ss.str();
+
+            int receiver_id = body["receiver_id"].get<int>();
+
+            // Insert into cache immediately
+            c.insertMessage(receiver_id, msg);
+            c.printCache();
+
+            // Send response first (non-blocking)
             res.status = 200;
-            res.set_content(R"({"status":"Message stored"})", "application/json"); // Without R, you have to escape every ".
+            res.set_content(R"({"status":"Message stored"})", "application/json");
+
+            unreadCnt[receiver_id]++;
+            // Then update DB asynchronously (fire-and-forget)
+            std::thread([&, msg, receiver_id]()
+                        { db.insertMessage(msg.senderId, receiver_id, msg.text, msg.timestamp); })
+                .detach();
         } catch (...) {
             res.status = 400;
             res.set_content(R"({"error":"Invalid request"})", "application/json");
@@ -65,24 +89,47 @@ void Server::start()
     matches[0]	The whole matched URL (/message/42)
     matches[1]	The first captured group → 42
     */
-    svr.Get(R"(/message/(\d+))", [&](const httplib::Request &req, httplib::Response &res) 
+    svr.Get(R"(/message/(\d+))", [&](const httplib::Request &req, httplib::Response &res)
             {
-        int client_id = stoi(req.matches[1]);
-        auto result = db.getMessages(client_id);
-        json messages = json::array();
+    int client_id = stoi(req.matches[1]);
+    json messages = c.readUnreadMessages(client_id);
+    c.printCache();
 
-        for(auto row : result) {
-                messages.push_back({
-                    {"id", int(row[0])},
-                    {"sender_id", int(row[1])},
-                    {"receiver_id", int(row[2])},
-                    {"msg", (string)row[3]},
-                    {"created_at", row[4].get<string>()}
-                });
+    int cachedCount = messages.size();
+    int totalUnread = unreadCnt[client_id];
+
+    cout << "Cache had " << cachedCount << " / " << totalUnread << " unread messages.\n";
+
+    if (cachedCount < totalUnread) {
+        string oldestTs = cachedCount > 0
+                              ? (messages.back().contains("timestamp")
+                                     ? messages.back()["timestamp"].get<string>()
+                                     : messages.back()["created_at"].get<string>())
+                              : "9999-12-31 23:59:59";
+
+        auto dbResult = db.getUnreadMessagesBefore(client_id, oldestTs);
+
+        for (auto row : dbResult) {
+            messages.push_back({
+                {"id", int(row[0])},
+                {"sender_id", int(row[1])},
+                {"receiver_id", int(row[2])},
+                {"msg", (string)row[3]},
+                {"created_at", row[4].get<string>()}  // unified key
+            });
         }
+    }
 
-        res.status = 200;
-        res.set_content(messages.dump(), "application/json"); });
+    if (messages.is_null()) messages = json::array();
+
+    res.status = 200;
+    res.set_content(messages.dump(), "application/json");
+
+    unreadCnt[client_id] = 0;
+
+    std::thread([this, client_id]() {
+    this->db.markMessagesAsRead(client_id);
+}).detach(); });
 
     svr.Get(R"(/history/(\d+))", [&](const httplib::Request &req, httplib::Response &res)
             {
@@ -101,14 +148,20 @@ void Server::start()
         }
 
         res.status = 200;
-        res.set_content(messages.dump(), "application/json"); });
+        res.set_content(messages.dump(), "application/json");
+        std::thread([this, client_id]()
+                    {   c.removeClient(client_id);
+                        db.markMessagesAsRead(client_id); })
+            .detach();
+    });
 
     // Delete all messages for client
-    svr.Delete(R"(/message/(\d+))", [&](const httplib::Request &req, httplib::Response &res) 
+    svr.Delete(R"(/message/(\d+))", [&](const httplib::Request &req, httplib::Response &res)
                {
         int client_id = stoi(req.matches[1]);
 
         db.deleteMessagesByReceiver(client_id);
+        c.removeClient(client_id);
 
         res.status = 200;
         res.set_content(R"({"status":"Messages deleted"})", "application/json"); });

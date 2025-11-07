@@ -2,12 +2,15 @@
 #define SERVER_H
 
 #include "dbconnection.h"
+#include "cache.h"
 #include <string>
 
 class Server
 {
 private:
     DBConnection db;
+    Cache c;
+    unordered_map<int, int> unreadCnt;
 
 public:
     Server(const std::string &host,

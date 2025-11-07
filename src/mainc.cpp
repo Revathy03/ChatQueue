@@ -1,10 +1,12 @@
 #include "client.h"
 #include <iostream>
+#include <string>
+#include <random>
 
 using namespace std;
+
 int main()
 {
-    cout << "test";
     Client client("http://localhost:8080");
 
     while (true)
@@ -23,16 +25,30 @@ int main()
         if (choice == 1)
         {
             int receiver;
-            string msg="";
-            //cout << "Enter Receiver ID: ";
-            //cin >> receiver;
-            cin.ignore();
-            cout << "Enter Message: ";
-            while(msg==""){
-                getline(cin, msg);
-                if(msg=="")
-                    cout << "Please enter your message: ";
+            // string msg="";
+            // //cout << "Enter Receiver ID: ";
+            // //cin >> receiver;
+            // cin.ignore();
+            // cout << "Enter Message: ";
+            // while(msg==""){
+            //     getline(cin, msg);
+            //     if(msg=="")
+            //         cout << "Please enter your message: ";
+            // }
+            static const string charset = "abcdefghijklmnopqrstuvwxyz ";
+            random_device rd;        //random number generator
+            mt19937 gen(rd());       // Mersenne Twister PRNG produce deterministic number, rd() gives random seed Mersenne Twister PRNG
+            uniform_int_distribution<> len_dist(3, 10); // random length between 3 and 10
+            uniform_int_distribution<> char_dist(0, charset.size() - 1);
+
+            int msg_len = len_dist(gen);
+            string msg;
+            for (int i = 0; i < msg_len; ++i)
+            {
+                msg += charset[char_dist(gen)];
             }
+
+            cout << "Auto-generated Message: " << msg << endl;
             client.sendMessage(msg);
         }
         else if (choice == 2)

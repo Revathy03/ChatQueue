@@ -14,6 +14,7 @@ set(SOURCES1
     src/mains.cpp
     src/server.cpp
     src/dbconnection.cpp
+    src/cache.cpp
 )
 
 # Create executable for server
