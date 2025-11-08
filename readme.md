@@ -1,11 +1,14 @@
 # ChatQueue
+
 ## Introduction
 
 ChatQueue is a multi-client chat application that allows clients to send and receive messages via a central server. Messages are stored on the server and can be retrieved by clients. The system supports features such as sending messages, tracking unread messages, reading message history, and deleting messages. ChatQueue is designed to handle concurrent messaging, in-memory caching, and persistent storage for reliability and performance.
 
 ---
+
 ## Architecture Diagram
 ![alt text](Architecture.png)
+
 ---
 
 ## How ChatQueue works
@@ -51,6 +54,7 @@ Messages Table
 - created_at (TIMESTAMP, default CURRENT_TIMESTAMP) – Timestamp of message creation.
 
 ---
+
 ## Cache Design
 The system also uses an in-memory cache which stores recently accessed messages and manages clients for fast retrieval:
 
@@ -75,6 +79,7 @@ The system also uses an in-memory cache which stores recently accessed messages 
 - All cache operations are protected by a mutex, enabling safe concurrent access from multiple threads.
 
 ---
+
 ## API Endpoints
 | **HTTP Method** | **Endpoint**              | **Description**                         | **Request Body / Parameters**                                 | **Response**                         |
 | --------------- | ------------------------- | --------------------------------------- | ------------------------------------------------------------- | ------------------------------------ |
@@ -84,7 +89,53 @@ The system also uses an in-memory cache which stores recently accessed messages 
 | GET             | `/history/{client_id}`    | Get full message history for the client | `client_id` in URL                                            | JSON array of all messages           |
 | DELETE          | `/message/{client_id}`    | Delete all messages for the client      | `client_id` in URL                                            | `{ "status": "Messages deleted" }`   |
 | DELETE          | `/deactivate/{client_id}` | Deactivate a client account             | `client_id` in URL                                            | `{ "status": "Client deactivated" }` |
+
 ---
+
 ## External Libraries
-This project leverages several external libraries to simplify development and improve performance. cpp-httplib is used for handling HTTP server and client operations, while nlohmann/json enables easy parsing and serialization of JSON data. The MySQL Connector/C++ X DevAPI manages persistent storage of client and message data in the database. dotenv-cpp is employed to load environment variables from a .env file, keeping sensitive configuration secure. Additionally, standard C++ libraries like <thread>, <mutex>, and <chrono> provide concurrency and synchronization for handling multiple client requests efficiently.
+This project leverages several external libraries to simplify development and improve performance. cpp-httplib is used for handling HTTP server and client operations, while nlohmann/json enables easy parsing and serialization of JSON data. The MySQL Connector/C++ X DevAPI manages persistent storage of client and message data in the database. dotenv-cpp is employed to load environment variables from a .env file, keeping sensitive configuration secure. Additionally, standard C++ libraries like thread, mutex, and chrono provide concurrency and synchronization for handling multiple client requests efficiently.
+
+---
+
+## Setup and Execution Guide
+### Clone the Repository
+```bash
+git clone https://github.com/<your-username>/ChatQueue.git
+cd ChatQueue
+```
+### Prerequisites
+Make sure you have the following installed on your system:
+
+- CMake (version 3.10 or higher)
+
+- g++ / clang++ (C++17 or later)
+
+- MySQL Server
+
+### Configure Environment Variables
+Create a .env file inside the root directory and define the following keys:
+```bash
+DB_HOST=localhost
+DB_PORT=3306
+DB_USER=user_name
+DB_PASSWORD=password
+DB_NAME=db_name
+```
+
+### Build the Project
+From the root directory:
+```bash
+mkdir build
+cd build
+cmake ..
+make
+```
+### Run the Server
+```bash
+./server
+```
+### Run the Client
+```bash
+./client
+```
 
