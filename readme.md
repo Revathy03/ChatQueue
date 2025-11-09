@@ -100,7 +100,7 @@ This project leverages several external libraries to simplify development and im
 ## Setup and Execution Guide
 ### Clone the Repository
 ```bash
-git clone https://github.com/<your-username>/ChatQueue.git
+git clone https://github.com/Revathy03/ChatQueue.git
 cd ChatQueue
 ```
 ### Prerequisites
