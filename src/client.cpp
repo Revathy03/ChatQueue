@@ -3,6 +3,7 @@
 #include "json.hpp"
 #include <iostream>
 #include <fstream>
+#include <chrono> 
 
 //"httplib.h" → C++ HTTP library for sending GET, PUT, DELETE requests.
 //"json.hpp" → JSON library for working with JSON objects.
@@ -28,7 +29,10 @@ Client::Client(const string &url) : serverUrl(url)
     // Register on the server
     httplib::Client cli(serverUrl.c_str());
     json body = {};
+    auto start = chrono::high_resolution_clock::now();
     auto res = cli.Post("/register", body.dump(), "application/json");
+    auto end = chrono::high_resolution_clock::now();
+    auto duration = chrono::duration_cast<chrono::microseconds>(end - start).count();
 
     if (res)
     {
@@ -55,6 +59,7 @@ Client::Client(const string &url) : serverUrl(url)
         cout << "Failed to send request" << endl;
         client_id = -1; // register failed
     }
+  //  cout << "Registration response time: " << duration << " ms" << endl;
 }
 
 //using member initializer list, I can assign directly
@@ -128,22 +133,28 @@ void Client::sendMessage(const string &msg)
         {"sender_id", client_id},
         {"receiver_id", receiver},
         {"msg", msg}};
-
+    auto start = chrono::high_resolution_clock::now();
     auto res = cli.Post("/message", body.dump(), "application/json"); // body.dump() → converts the JSON object into a string to send over HTTP.
+    auto end = chrono::high_resolution_clock::now();
+    auto duration = chrono::duration_cast<chrono::microseconds>(end - start).count();
     if (res)                                                         // application/json- tells what kind of data is passing
         {
             cout << "Server: " << res->body << endl;
         }
     else
         cout << "Failed to send request" << endl;
+    //cout << "Send message response time: " << duration << " ms" << endl;
 }
 
 void Client::getMessages()
 {
     httplib::Client cli(serverUrl.c_str());                             //.c_str() returns a const char* pointing to the internal null-terminated string of the std::string.
+    auto start = chrono::high_resolution_clock::now();
     auto res = cli.Get(("/message/" + to_string(client_id)).c_str());
-
-    if (res){
+    auto end = chrono::high_resolution_clock::now();
+    auto duration = chrono::duration_cast<chrono::microseconds>(end - start).count();
+    if (res)
+    {
         json messages = json::parse(res->body);
         for (auto &m : messages)
         {
@@ -155,14 +166,18 @@ void Client::getMessages()
     }
     else
         cout << "Failed to send request" << endl;
+    cout << "Fetch messages response time: " << duration << " micro sec" << endl;
 }
 
 void Client::getHistory()
 {
-    httplib::Client cli(serverUrl.c_str()); 
+    httplib::Client cli(serverUrl.c_str());
+    auto start = chrono::high_resolution_clock::now();
     auto res = cli.Get(("/history/" + to_string(client_id)).c_str());
-
-    if (res){
+    auto end = chrono::high_resolution_clock::now();
+    auto duration = chrono::duration_cast<chrono::microseconds>(end - start).count();
+    if (res)
+    {
         json messages = json::parse(res->body);
         for (auto &m : messages)
         {
@@ -174,16 +189,20 @@ void Client::getHistory()
     }
     else
         cout << "Failed to send request" << endl;
+    cout << "History fetch response time: " << duration << " micro sec" << endl;
 }
 
 void Client::deleteMessages()
 {
     httplib::Client cli(serverUrl.c_str());
+    auto start = chrono::high_resolution_clock::now();
     auto res = cli.Delete(("/message/" + to_string(client_id)).c_str());
-
+    auto end = chrono::high_resolution_clock::now();
+    auto duration = chrono::duration_cast<chrono::microseconds>(end - start).count();
     if (res)
         cout << "Server: " << res->body << endl;
     else
         cout << "Failed to send request" << endl;
+    cout << "Delete message response time: " << duration << " micro sec" << endl;
 }
 
