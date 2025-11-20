@@ -11,6 +11,7 @@ private:
     DBConnection db;
     Cache c;
     unordered_map<int, int> unreadCnt;
+    mutable std::mutex unreadMtx;
 
 public:
     Server(const std::string &host,

@@ -36,8 +36,9 @@ void Server::start()
                  int client_id = db.registerClient();
                  string json = "{\"client_id\": " + to_string(client_id) + "}";
                  res.status = 200;
-                 res.set_content(json, "application/json"); 
-                 unreadCnt[client_id]=0; });
+                 res.set_content(json, "application/json");
+                 {std::lock_guard<std::mutex> lock(unreadMtx);
+                 unreadCnt[client_id]=0; }});
 
     svr.Post("/message", [&](const httplib::Request &req, httplib::Response &res)
              {
@@ -72,8 +73,8 @@ void Server::start()
             // Send response first (non-blocking)
             res.status = 200;
             res.set_content(R"({"status":"Message stored"})", "application/json");
-
-            unreadCnt[receiver_id]++;
+            {std::lock_guard<std::mutex> lock(unreadMtx);
+            unreadCnt[receiver_id]++;}
             // Then update DB asynchronously (fire-and-forget)
             std::thread([&, msg, receiver_id]()
                         { db.insertMessage(msg.senderId, receiver_id, msg.text, msg.timestamp); })
@@ -96,7 +97,9 @@ void Server::start()
     c.printCache();
 
     int cachedCount = messages.size();
-    int totalUnread = unreadCnt[client_id];
+    int totalUnread = 0;
+    {std::lock_guard<std::mutex> lock(unreadMtx);
+    totalUnread = unreadCnt[client_id];}
 
     cout << "Cache had " << cachedCount << " / " << totalUnread << " unread messages.\n";
 
@@ -124,8 +127,8 @@ void Server::start()
 
     res.status = 200;
     res.set_content(messages.dump(), "application/json");
-
-    unreadCnt[client_id] = 0;
+    {std::lock_guard<std::mutex> lock(unreadMtx);
+    unreadCnt[client_id] = 0;}
 
     std::thread([this, client_id]() {
     this->db.markMessagesAsRead(client_id);

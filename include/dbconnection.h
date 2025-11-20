@@ -4,13 +4,36 @@
 #include <mysqlx/xdevapi.h>
 #include <string>
 #include <mutex>
+#include <vector>
+#include <memory>
+#include <condition_variable>
 
 class DBConnection
 {
 private:
-    mysqlx::Session session; // Represents the connection session with the MySQL server.
-    mysqlx::Schema db;       // Represents a specific database/schema selected within the session.
-    mutable std::mutex mtx;
+    struct PooledSession
+    {
+        std::unique_ptr<mysqlx::Session> session;
+        bool inUse = false;
+
+        PooledSession(const std::string &host, int port,
+                      const std::string &user, const std::string &password)
+            : session(std::make_unique<mysqlx::Session>(host, port, user, password)) {}
+    };
+
+    std::vector<std::unique_ptr<PooledSession>> pool;
+    mutable std::mutex pool_mtx;
+    std::condition_variable pool_cv;
+    int pool_size = 10;
+
+    std::string db_name;
+
+    // Helper to acquire/release pooled sessions
+    PooledSession *acquireSession();
+    void releaseSession(PooledSession *sess);
+
+    // Helper to get mysqlx::Schema
+    mysqlx::Schema getSchema(mysqlx::Session &session);
 
 public:
     DBConnection(const std::string &host,
@@ -20,14 +43,15 @@ public:
                  const std::string &db_name);
 
     ~DBConnection();
-    mysqlx::RowResult getUnreadMessagesBefore(int receiver_id, const std::string &timestamp);
+
     int registerClient();
     void deactivateClient(int client_id);
     void insertMessage(int sender_id, int receiver_id, const std::string &msg, const std::string &created_at);
     mysqlx::RowResult getMessages(int receiver_id);
+    void markMessagesAsRead(int receiver_id);
     mysqlx::RowResult getHistory(int receiver_id);
     void deleteMessagesByReceiver(int receiver_id);
-    void markMessagesAsRead(int receiver_id);
+    mysqlx::RowResult getUnreadMessagesBefore(int receiver_id, const std::string &timestamp);
 };
 
 #endif
