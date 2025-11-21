@@ -11,7 +11,7 @@ Server::Server(const string &host,
                const string &user,
                const string &password,
                const string &db_name)
-    : db(host, port, user, password, db_name),c(2,2) {} // As the server starts it connects to db, calling the constructor of DBconnection
+    : db(host, port, user, password, db_name),c(5000,5000) {} // As the server starts it connects to db, calling the constructor of DBconnection
 //add ,c(2,3) to change limit
 void Server::start()
 {
@@ -79,10 +79,14 @@ void Server::start()
             std::thread([&, msg, receiver_id]()
                         { db.insertMessage(msg.senderId, receiver_id, msg.text, msg.timestamp); })
                 .detach();
+            //db.insertMessage(msg.senderId, receiver_id, msg.text, msg.timestamp);
         } catch (...) {
             res.status = 400;
             res.set_content(R"({"error":"Invalid request"})", "application/json");
-        } });
+        } 
+    });
+
+
 
     // Get messages for client
     /*
@@ -132,7 +136,40 @@ void Server::start()
 
     std::thread([this, client_id]() {
     this->db.markMessagesAsRead(client_id);
-}).detach(); });
+}).detach(); 
+});
+    svr.Get(R"(/recent/(\d+))", [&](const httplib::Request &req, httplib::Response &res)
+            {
+    int client_id = stoi(req.matches[1]);
+    json messages = json::array();
+
+    try {
+        // Check if cache already has this client
+        if (!c.hasClient(client_id)) {
+            // First-time fetch: get from DB
+            auto dbResult = db.getRecentMessages(client_id, 2);
+
+            for (auto row : dbResult) {
+                Message msg;
+                msg.senderId = int(row[1]);
+                msg.text = row[3].get<string>();
+                msg.timestamp = row[4].get<string>();
+                msg.fromDB = true; // mark as DB-fetched
+
+                // Insert into cache
+                c.insertMessage(client_id, msg);
+            }
+        }
+
+        // Serve messages from cache
+        messages = c.readRecentMessages(client_id);
+
+        res.status = 200;
+        res.set_content(messages.dump(), "application/json");
+    } catch (...) {
+        res.status = 500;
+        res.set_content(R"({"error":"Failed to fetch recent messages"})", "application/json");
+    } });
 
     svr.Get(R"(/history/(\d+))", [&](const httplib::Request &req, httplib::Response &res)
             {

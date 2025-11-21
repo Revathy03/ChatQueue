@@ -17,6 +17,7 @@ struct Message
     int senderId;
     string text;
     string timestamp;
+    bool fromDB = false;
 };
 
 struct ClientNode
@@ -48,6 +49,7 @@ public:
 
     bool hasClient(int clientId);
     void removeClient(int clientId);
+    json readRecentMessages(int clientId);
 };
 
 #endif

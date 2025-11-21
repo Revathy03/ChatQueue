@@ -52,6 +52,7 @@ public:
     mysqlx::RowResult getHistory(int receiver_id);
     void deleteMessagesByReceiver(int receiver_id);
     mysqlx::RowResult getUnreadMessagesBefore(int receiver_id, const std::string &timestamp);
+    mysqlx::RowResult getRecentMessages(int receiver_id, int limit);
 };
 
 #endif

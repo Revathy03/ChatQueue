@@ -254,3 +254,25 @@ mysqlx::RowResult DBConnection::getUnreadMessagesBefore(int receiver_id, const s
     releaseSession(sess);
     return result;
 }
+mysqlx::RowResult DBConnection::getRecentMessages(int receiver_id, int limit = 50)
+{
+    auto sess = acquireSession();
+    mysqlx::RowResult result;
+    try
+    {
+        auto db = getSchema(*sess->session);
+        result = db.getTable("messages")
+                     .select("id", "sender_id", "receiver_id", "msg", "CAST(created_at AS CHAR) AS created_at")
+                     .where("receiver_id = :rid")
+                     .orderBy("created_at DESC")
+                     .limit(limit)
+                     .bind("rid", receiver_id)
+                     .execute();
+    }
+    catch (const mysqlx::Error &err)
+    {
+        cerr << "getRecentMessages Error: " << err.what() << endl;
+    }
+    releaseSession(sess);
+    return result;
+}

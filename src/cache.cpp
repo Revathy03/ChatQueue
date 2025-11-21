@@ -60,9 +60,9 @@ void Cache::insertMessage(int clientId, const Message &msgInput)
 {
     lock_guard<mutex> lock(mtx);
     Message msg = msgInput;
+
     if (msg.timestamp.empty())
     {
-        // Assign current time if not already set
         auto now = chrono::system_clock::now();
         time_t t = chrono::system_clock::to_time_t(now);
         tm local_tm = *localtime(&t);
@@ -74,59 +74,76 @@ void Cache::insertMessage(int clientId, const Message &msgInput)
     if (clientMap.find(clientId) == clientMap.end())
     {
         if (clientList.size() >= maxClients)
-        {
             evictLeastUsedClient();
-        }
+
         clientList.push_front({clientId, {}});
         clientMap[clientId] = clientList.begin();
     }
 
-    auto nodeIt = clientMap[clientId];
-    auto &msgs = nodeIt->messages;
+    auto &msgs = clientMap[clientId]->messages;
 
     if (msgs.size() >= maxMsgsPerClient)
-    {
         msgs.pop_back();
-    }
 
     msgs.push_front(msg);
     moveToFront(clientId);
 
     cout << "Cache: Inserted msg to client " << clientId
-         << " @ " << msg.timestamp << endl;
+         << " @ " << msg.timestamp
+         << (msg.fromDB ? " [fromDB]" : " [unread]") << endl;
 }
 
-    json Cache::readUnreadMessages(int clientId)
+json Cache::readUnreadMessages(int clientId)
+{
+    lock_guard<mutex> lock(mtx);
+    json result = json::array();
+
+    if (!hasClient(clientId))
+        return result;
+
+    auto nodeIt = clientMap[clientId];
+    auto &msgs = nodeIt->messages;
+
+    auto it = msgs.begin();
+    while (it != msgs.end())
     {
-        lock_guard<mutex> lock(mtx);
-        json result = json::array();
-
-        if (!hasClient(clientId))
+        if (!it->fromDB) // only unread messages
         {
-            return result;
+            result.push_back({{"sender_id", it->senderId},
+                              {"msg", it->text},
+                              {"created_at", it->timestamp}});
+            it = msgs.erase(it); // remove from cache after reading
         }
-
-        auto it = clientMap.find(clientId);
-        if (it == clientMap.end())
+        else
         {
-            cout << "Not present in cache" << endl;
-            return json::array();
+            ++it; // keep DB messages
         }
+    }
 
-        auto nodeIt = it->second;
+    return result;
+}
+json Cache::readRecentMessages(int clientId)
+{
+    lock_guard<mutex> lock(mtx);
+    json result = json::array();
 
-        for (auto &m : nodeIt->messages)
+    if (!hasClient(clientId))
+        return result;
+
+    auto nodeIt = clientMap[clientId];
+    auto &msgs = nodeIt->messages;
+
+    for (auto &m : msgs)
+    {
+        if (m.fromDB)
         {
             result.push_back({{"sender_id", m.senderId},
                               {"msg", m.text},
                               {"created_at", m.timestamp}});
         }
-
-        nodeIt->messages.clear();
-        removeClient(clientId);
-
-        return result;
     }
+    return result;
+}
 
     bool Cache::hasClient(int clientId)
     {

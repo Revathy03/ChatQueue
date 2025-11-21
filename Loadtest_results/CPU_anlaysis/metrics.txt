@@ -1,0 +1,65 @@
+Commands used
+
+Run server: taskset -c 0-1 ./server
+
+
+1: 
+Run Load generator : taskset -c 2-5 ./loadtest 2 360 cpu
+pidstat -u 1 >> cpu_2.log
+iostat -x sda 1 > io_2_.log
+
+-------- RESULTS --------
+Total Requests: 1430878
+Avg Response Time: 0.0166485 ms
+Throughput: 3974.66 req/sec
+Number of threads: 2
+
+2:
+Run Load generator : taskset -c 2-5 ./loadtest 4 360 cpu
+pidstat -u 1 >> cpu_4.log
+iostat -x sda 1 > io_4.log
+
+
+-------- RESULTS --------
+Total Requests: 1947329
+Avg Response Time: 0.0879589 ms
+Throughput: 5409.25 req/sec
+Number of threads: 4
+
+3:Run Load generator :taskset -c 2-5 ./loadtest 6 360 cpu
+pidstat -u 1 >> cpu_6.log
+iostat -x sda 1 > io_6.log
+
+-------- RESULTS --------
+Total Requests: 2391043
+Avg Response Time: 0.234067 ms
+Throughput: 6641.79 req/sec
+Number of threads: 6
+
+4:3:Run Load generator :taskset -c 2-5 ./loadtest 8 360 cpu
+pidstat -u 1 >> cpu_8.log
+iostat -x sda 1 > io_8.log
+
+
+-------- RESULTS --------
+Total Requests: 2413394
+Avg Response Time: 0.526332 ms
+Throughput: 6703.87 req/sec
+Number of threads: 8
+
+4:Run Load generator :taskset -c 2-5 ./loadtest 10 360 cpu
+pidstat -u 1 >> cpu_10.log
+iostat -x sda 1 > io_10.log
+
+
+-------- RESULTS --------
+Total Requests: 2104297
+Avg Response Time: 1.07259 ms
+Throughput: 5845.27 req/sec
+Number of threads: 10
+
+
+
+
+
+
