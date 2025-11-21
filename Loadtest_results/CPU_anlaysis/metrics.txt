@@ -47,7 +47,7 @@ Avg Response Time: 0.526332 ms
 Throughput: 6703.87 req/sec
 Number of threads: 8
 
-4:Run Load generator :taskset -c 2-5 ./loadtest 10 360 cpu
+5:Run Load generator :taskset -c 2-5 ./loadtest 10 360 cpu
 pidstat -u 1 >> cpu_10.log
 iostat -x sda 1 > io_10.log
 

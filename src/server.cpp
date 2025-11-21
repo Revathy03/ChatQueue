@@ -68,7 +68,7 @@ void Server::start()
 
             // Insert into cache immediately
             c.insertMessage(receiver_id, msg);
-            c.printCache();
+            //c.printCache();
 
             // Send response first (non-blocking)
             res.status = 200;
@@ -76,10 +76,10 @@ void Server::start()
             {std::lock_guard<std::mutex> lock(unreadMtx);
             unreadCnt[receiver_id]++;}
             // Then update DB asynchronously (fire-and-forget)
-            std::thread([&, msg, receiver_id]()
-                        { db.insertMessage(msg.senderId, receiver_id, msg.text, msg.timestamp); })
-                .detach();
-            //db.insertMessage(msg.senderId, receiver_id, msg.text, msg.timestamp);
+            // std::thread([&, msg, receiver_id]()
+            //             { db.insertMessage(msg.senderId, receiver_id, msg.text, msg.timestamp); })
+            //     .detach();
+            db.insertMessage(msg.senderId, receiver_id, msg.text, msg.timestamp);
         } catch (...) {
             res.status = 400;
             res.set_content(R"({"error":"Invalid request"})", "application/json");

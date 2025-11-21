@@ -24,7 +24,7 @@ private:
     std::vector<std::unique_ptr<PooledSession>> pool;
     mutable std::mutex pool_mtx;
     std::condition_variable pool_cv;
-    int pool_size = 10;
+    int pool_size = 100;
 
     std::string db_name;
 

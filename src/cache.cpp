@@ -88,9 +88,9 @@ void Cache::insertMessage(int clientId, const Message &msgInput)
     msgs.push_front(msg);
     moveToFront(clientId);
 
-    cout << "Cache: Inserted msg to client " << clientId
-         << " @ " << msg.timestamp
-         << (msg.fromDB ? " [fromDB]" : " [unread]") << endl;
+    //cout << "Cache: Inserted msg to client " << clientId
+      //   << " @ " << msg.timestamp
+        // << (msg.fromDB ? " [fromDB]" : " [unread]") << endl;
 }
 
 json Cache::readUnreadMessages(int clientId)

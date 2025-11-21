@@ -162,7 +162,7 @@ void DBConnection::insertMessage(int sender_id, int receiver_id,
     {
         auto db = getSchema(*sess->session);
         db.getTable("messages").insert("sender_id", "receiver_id", "msg", "created_at").values(sender_id, receiver_id, msg, created_at).execute();
-        cout << "Message inserted @ " << created_at << endl;
+     //   cout << "Message inserted @ " << created_at << endl;
     }
     catch (const mysqlx::Error &err)
     {
