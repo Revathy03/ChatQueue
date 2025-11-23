@@ -9,10 +9,11 @@ pidstat -u 1 >> cpu_2.log
 iostat -x sda 1 > io_2_.log
 
 -------- RESULTS --------
-Total Requests: 1430878
-Avg Response Time: 0.0166485 ms
-Throughput: 3974.66 req/sec
+Total Requests: 1561729
+Avg Response Time: 0.00782402 ms
+Throughput: 4338.14 req/sec
 Number of threads: 2
+
 
 2:
 Run Load generator : taskset -c 2-5 ./loadtest 4 360 cpu
@@ -21,9 +22,9 @@ iostat -x sda 1 > io_4.log
 
 
 -------- RESULTS --------
-Total Requests: 1947329
-Avg Response Time: 0.0879589 ms
-Throughput: 5409.25 req/sec
+Total Requests: 1789684
+Avg Response Time: 0.182151 ms
+Throughput: 4971.34 req/sec
 Number of threads: 4
 
 3:Run Load generator :taskset -c 2-5 ./loadtest 6 360 cpu
@@ -31,20 +32,19 @@ pidstat -u 1 >> cpu_6.log
 iostat -x sda 1 > io_6.log
 
 -------- RESULTS --------
-Total Requests: 2391043
-Avg Response Time: 0.234067 ms
-Throughput: 6641.79 req/sec
+Total Requests: 1895145
+Avg Response Time: 0.585944 ms
+Throughput: 5264.29 req/sec
 Number of threads: 6
 
-4:3:Run Load generator :taskset -c 2-5 ./loadtest 8 360 cpu
+4:Run Load generator :taskset -c 2-5 ./loadtest 8 360 cpu
 pidstat -u 1 >> cpu_8.log
 iostat -x sda 1 > io_8.log
 
-
 -------- RESULTS --------
-Total Requests: 2413394
-Avg Response Time: 0.526332 ms
-Throughput: 6703.87 req/sec
+Total Requests: 1924474
+Avg Response Time: 0.947621 ms
+Throughput: 5345.76 req/sec
 Number of threads: 8
 
 5:Run Load generator :taskset -c 2-5 ./loadtest 10 360 cpu
@@ -53,13 +53,26 @@ iostat -x sda 1 > io_10.log
 
 
 -------- RESULTS --------
-Total Requests: 2104297
-Avg Response Time: 1.07259 ms
-Throughput: 5845.27 req/sec
+Total Requests: 1957948
+Avg Response Time: 1.28794 ms
+Throughput: 5438.74 req/sec
 Number of threads: 10
 
+6:Run Load generator :taskset -c 2-5 ./loadtest 12 360 cpu
+pidstat -u 1 >> cpu_12.log
+iostat -x sda 1 > io_12.log
+
+-------- RESULTS --------
+Total Requests: 2003540
+Avg Response Time: 1.60363 ms
+Throughput: 5565.39 req/sec
+Number of threads: 12
+
+6:Run Load generator :taskset -c 2-5 ./loadtest 14 360 cpu
+pidstat -u 1 >> cpu_14.log
+iostat -x sda 1 > io_14.log
 
 
 
-
+--------------------------------------------------------------------------------------------
 
