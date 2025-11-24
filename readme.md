@@ -138,4 +138,117 @@ make
 ```bash
 ./client
 ```
+---
+## Load Generator Design
+
+A custom multi-threaded load generator written in C++ using libcurl is used to simulate concurrent clients.
+### Architecture
+Each thread acts as a virtual client performing repeated operations for a configurable duration. Two workloads are supported:
+#### I/O-Bound Mode 
+ Each thread sends messages to randomly selected other clients, producing heavy POST traffic.
+
+
+#### CPU-Bound Mode 
+ Each thread repeatedly fetches recent message history using GET requests.
+
+
+### Metrics Collected
+- Total number of HTTP requests
+- Average response time (ms)
+- Throughput (requests/sec)
+- CPU utilization
+- Disk utilization
+
+## Load Testing Setup
+
+Type of load generator: Closed Loop
+
+### Bottleneck 1: CPU
+
+The initial database setup involves storing 15,000 messages in the database, representing random communication where client i sends messages to client j. In the load generator, the thread number is used as the client identifier. A query is issued to read recent messages, which are first fetched from the database and then stored in the cache. Once cached, all subsequent recent-message queries are served directly from the cache. As a result, the workload shifts entirely to CPU processing, which eventually leads to a CPU bottleneck.
+
+- Start the server and pin server to two cores
+```bash
+taskset -c 0 ./server
+```
+- Start the load generator and pin on 4 cores.
+```bash
+taskset -c 1-4 ./loadtest <number_of_threads> <duration> cpu
+```
+- Measure CPU performance using pidstat command
+```bash
+pidstat -u 1 >> cpu_2.log
+```
+Repeat for increasing thread counts until server throughput flattens and bottleneck utilization reaches saturation
+
+### Throughput vs Number of Threads
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+4.1.2 Average latency vs Number of threads
+
+
+
+
+
+
+
+
+
+4.1.3 CPU Utilization vs Number of threads
+
+
+
+4.2 Bottleneck 2: DISK
+The initial database starts empty. Each client sends a message to another randomly selected client. When a message is sent, the query first writes it to the cache and then to the database. As the number of messages grows, frequent disk accesses occur during storage operations, which eventually leads to an I/O bottleneck.
+Start the server and pin server to two cores
+taskset -c 0 ./server
+Start the load generator and pin on 4 cores.
+taskset -c 1-4 ./loadtest <number_of_threads> <duration> io
+Measure IO performance using iostat command
+iostat -x sda 1 > io_2.log
+
+Repeat for increasing thread counts until server throughput flattens and bottleneck utilization reaches saturation
+
+
+4.1.1 Throughput vs Number of Threads
+
+
+
+
+
+
+4.1.2 Average latency vs Number of threads
+
+
+
+
+
+
+
+
+
+
+4.1.3 CPU Utilization vs Number of threads
+
+
+
+
+
+
+
 
