@@ -86,6 +86,7 @@ The system also uses an in-memory cache which stores recently accessed messages 
 | POST            | `/register`               | Register a new client                   | None                                                          | `{ "client_id": <id> }`              |
 | POST            | `/message`                | Send a message to another client        | `{ "sender_id": <id>, "receiver_id": <id>, "msg": "<text>" }` | `{ "status": "Message stored" }`     |
 | GET             | `/message/{client_id}`    | Get unread messages for the client      | `client_id` in URL                                            | JSON array of unread messages        |
+| GET             | `/recent/{client_id}`    | Get recent messages for the client      | `client_id` in URL                                            | JSON array of recent messages        |
 | GET             | `/history/{client_id}`    | Get full message history for the client | `client_id` in URL                                            | JSON array of all messages           |
 | DELETE          | `/message/{client_id}`    | Delete all messages for the client      | `client_id` in URL                                            | `{ "status": "Messages deleted" }`   |
 | DELETE          | `/deactivate/{client_id}` | Deactivate a client account             | `client_id` in URL                                            | `{ "status": "Client deactivated" }` |
@@ -183,68 +184,45 @@ Repeat for increasing thread counts until server throughput flattens and bottlen
 
 ### Throughput vs Number of Threads
 
+![alt text](image.png)
+
+### Average latency vs Number of threads
+
+![alt text](image-1.png)
+
+### CPU Utilization vs Number of threads
+![alt text](image-2.png)
 
 
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-4.1.2 Average latency vs Number of threads
-
-
-
-
-
-
-
-
-
-4.1.3 CPU Utilization vs Number of threads
-
-
-
-4.2 Bottleneck 2: DISK
+## Bottleneck 2: DISK
 The initial database starts empty. Each client sends a message to another randomly selected client. When a message is sent, the query first writes it to the cache and then to the database. As the number of messages grows, frequent disk accesses occur during storage operations, which eventually leads to an I/O bottleneck.
-Start the server and pin server to two cores
+
+- Start the server and pin server to two cores
+```bash
 taskset -c 0 ./server
-Start the load generator and pin on 4 cores.
+```
+- Start the load generator and pin on 4 cores.
+```bash
 taskset -c 1-4 ./loadtest <number_of_threads> <duration> io
-Measure IO performance using iostat command
+ ```
+- Measure IO performance using iostat command
+```bash
 iostat -x sda 1 > io_2.log
+```
 
 Repeat for increasing thread counts until server throughput flattens and bottleneck utilization reaches saturation
 
 
-4.1.1 Throughput vs Number of Threads
+### Throughput vs Number of Threads
+![alt text](image-3.png)
 
 
+### Average latency vs Number of threads
+![alt text](image-4.png)
 
-
-
-
-4.1.2 Average latency vs Number of threads
-
-
-
-
-
-
-
-
-
-
-4.1.3 CPU Utilization vs Number of threads
-
+### CPU Utilization vs Number of threads
+![alt text](image-5.png)
 
 
 
