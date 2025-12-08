@@ -36,6 +36,7 @@ iostat -x sda 1 > io_6.log
 Total Requests: 160006
 Avg Response Time: 12.6943 ms
 Throughput: 444.461 req/sec
+Number of Threads: 6
 
 4:
 Run Load generator : taskset -c 2-5 ./loadtest 8 360 cpu
